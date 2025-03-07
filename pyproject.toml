@@ -1,0 +1,54 @@
+[project]
+name = "RoDI"
+version = "0.1.0"
+description = "Portfolio Optimization using RL"
+requires-python = ">=3.11"
+dependencies = [
+    "torch",
+    "pandas",
+    "numpy",
+    "yfinance",
+    "matplotlib",
+    "gymnasium",
+    "tqdm",
+    "scikit-learn",
+    "streamlit",
+    "plotly",
+    "setuptools"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "black",
+    "isort",
+    "flake8",
+    "mypy",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+strict_optional = true
