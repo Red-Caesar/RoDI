@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import copy
+from rodi.models.base import BaseModel
 
 
 class Actor(nn.Module):
@@ -82,7 +83,7 @@ class Critic(nn.Module):
         return q1
 
 
-class TD3:
+class TD3(BaseModel):
     """
     Twin Delayed Deep Deterministic Policy Gradients (TD3) agent
     """

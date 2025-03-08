@@ -1,8 +1,9 @@
 import numpy as np
 import torch
+from rodi.models.base import BaseBuffer
 
 
-class ReplayBuffer:
+class ReplayBuffer(BaseBuffer):
     def __init__(self, state_dim, action_dim, max_size=1e6):
         """
         Initialize the replay buffer

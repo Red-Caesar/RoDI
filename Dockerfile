@@ -4,10 +4,10 @@ WORKDIR /app
 
 COPY pyproject.toml .
 COPY . .
-RUN uv pip install --system -r pyproject.toml
+RUN uv pip install --system -e .
 
 EXPOSE 8501
 
-RUN mkdir -p models/backup
+RUN mkdir -p rodi/models/backup
 
-CMD ["streamlit", "run", "app.py"]
+CMD ["streamlit", "run", "rodi/app.py"]

@@ -5,66 +5,42 @@ import torch
 from datetime import datetime, timedelta
 from pathlib import Path
 import matplotlib.pyplot as plt
-from models.model import TD3
-from models.portfolio_env import StockEnv
-from models.replay_buffer import ReplayBuffer
+from rodi.models import PROFILES, ModelProfile
+from rodi.utils import DEFAULT_TICKERS
+import pandas as pd
+import os
 
+torch.classes.__path__ = [os.path.join(torch.__path__[0], torch.classes.__file__)]
 st.set_page_config(page_title="Portfolio Optimization - Training", layout="wide")
-
-DEFAULT_TICKERS = [
-    "AAPL",
-    "MSFT",
-    "GOOGL",
-    "META",
-    "NVDA",
-    "ADBE",
-    "CRM",
-    "INTC",
-    "AMD",
-    "CSCO",
-    "JPM",
-    "BAC",
-    "GS",
-    "MS",
-    "BLK",
-    "JNJ",
-    "PFE",
-    "UNH",
-    "ABBV",
-    "MRK",
-    "AMZN",
-    "WMT",
-    "PG",
-    "KO",
-    "PEP",
-    "XOM",
-    "CVX",
-    "COP",
-    "CAT",
-    "BA",
-]
 
 
 @st.cache_data
 def download_data(tickers, start_date, end_date):
-    """Download stock data from Yahoo Finance"""
     data = yf.download(tickers, start=start_date, end=end_date)
     return data
 
 
-def train_td3(
-    env,
-    agent,
-    replay_buffer,
-    max_timesteps,
-    batch_size,
-    exploration_noise,
-    start_timesteps,
-    eval_freq,
-    save_model,
+def run_train(
+    profile: ModelProfile,
+    data: pd.DataFrame,
+    initial_budget: int,
+    max_timesteps: int,
+    batch_size: int,
+    exploration_noise: float,
+    start_timesteps: int,
+    eval_freq: int,
+    save_model: int,
     progress_bar,
 ):
-    """Train the TD3 agent with progress tracking"""
+    env = profile.env(data, DEFAULT_TICKERS, initial_budget)
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+    max_action = float(env.action_space.high[0])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    agent = profile.model(state_dim, action_dim, max_action, device=device)
+    replay_buffer = profile.replay_buffer(state_dim, action_dim)
+
     episode_reward = 0
     episode_timesteps = 0
     episode_num = 0
@@ -109,7 +85,8 @@ def train_td3(
             episode_num += 1
 
         if (t + 1) % save_model == 0:
-            model_path = f"models/backup/td3_portfolio_{t+1}"
+            prefix = profile.prefix_model_path
+            model_path = f"rodi/models/backup/{prefix}_portfolio_{t+1}"
             agent.save(model_path)
             st.sidebar.success(f"Model saved: {model_path}")
 
@@ -118,12 +95,13 @@ def train_td3(
 
 def main():
     st.title("Train Portfolio Optimization Model")
-    st.write("Configure and train a new TD3 model for portfolio optimization")
+    st.write("Configure and train a new model for portfolio optimization")
     st.sidebar.header("Training Configuration")
 
+    profile_name = st.sidebar.selectbox("Select model profile", list(PROFILES.keys()))
     max_timesteps = st.sidebar.number_input("Max Timesteps", 10, 1000000, 100000, 100)
     batch_size = st.sidebar.number_input("Batch Size", 16, 1024, 256, 16)
-    exploration_noise = st.sidebar.slider("Exploration Noise", 0, 1, 0.1, 0.01)
+    exploration_noise = st.sidebar.slider("Exploration Noise", 0.0, 1.0, 0.1, 0.01)
     start_timesteps = st.sidebar.number_input("Start Timesteps", 10, 100000, 10000, 100)
     eval_freq = st.sidebar.number_input("Evaluation Frequency", 1, 50000, 5000, 100)
     save_model = st.sidebar.number_input("Save Model Frequency", 1, 50000, 20000, 100)
@@ -142,31 +120,21 @@ def main():
         st.error("Start date must be before end date!")
         return
 
-    Path("models/backup").mkdir(exist_ok=True)
+    Path("rodi/models/backup").mkdir(exist_ok=True)
 
     if st.sidebar.button("Start Training"):
         with st.spinner("Downloading stock data..."):
             data = download_data(DEFAULT_TICKERS, start_date, end_date)
 
-        env = StockEnv(data, DEFAULT_TICKERS, initial_budget)
-
-        state_dim = env.observation_space.shape[0]
-        action_dim = env.action_space.shape[0]
-        max_action = float(env.action_space.high[0])
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        agent = TD3(state_dim, action_dim, max_action, device=device)
-        replay_buffer = ReplayBuffer(state_dim, action_dim)
+        profile = PROFILES[profile_name]
 
         progress_bar = st.progress(0)
         st.write("Training progress:")
 
-        # metrics_placeholder = st.empty()
-
-        portfolio_values, rewards = train_td3(
-            env,
-            agent,
-            replay_buffer,
+        portfolio_values, rewards = run_train(
+            profile,
+            data,
+            initial_budget,
             max_timesteps,
             batch_size,
             exploration_noise,

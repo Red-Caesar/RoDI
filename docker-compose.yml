@@ -7,4 +7,4 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ./models:/app/models
+      - ./rodi/models/backup:/app/rodi/models/backup

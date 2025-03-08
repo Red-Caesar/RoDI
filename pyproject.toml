@@ -1,6 +1,9 @@
 [project]
-name = "RoDI"
+name = "rodi"
 version = "0.1.0"
+authors = [
+    { name = "Suslova Barbara", mail = "<suslovavd2002@mail.ru>"},
+]
 description = "Portfolio Optimization using RL"
 requires-python = ">=3.11"
 dependencies = [
@@ -52,3 +55,6 @@ warn_unused_ignores = true
 warn_return_any = true
 warn_unreachable = true
 strict_optional = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["rodi"]
